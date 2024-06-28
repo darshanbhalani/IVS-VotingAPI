@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using IVS_VotingAPI.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IVS_VotingAPI.Controllers
@@ -7,6 +8,9 @@ namespace IVS_VotingAPI.Controllers
     [ApiController]
     public class MyVoteController : ControllerBase
     {
+        public VotingModel voting = new VotingModel();
+
+
         [HttpGet("GetAllElections")]
         public IActionResult GetAllElections()
         {
@@ -14,8 +18,22 @@ namespace IVS_VotingAPI.Controllers
         }
 
 
-        [HttpGet("GetAllElections")]
-        public IActionResult Vote(long electionId) {
+        [HttpGet("ValidateVoter")]
+        public IActionResult CheckEligiblity(VotingModel voting) {
+            return Ok();
+        }
+
+
+        [HttpGet("VerifyVoter")]
+        public IActionResult VerifyVoter(VotingModel voting)
+        {
+            return Ok();
+        }
+
+
+        [HttpGet("Vote")]
+        public IActionResult Vote(VotingModel voting)
+        {
             return Ok();
         }
     }
