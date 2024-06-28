@@ -1,0 +1,6 @@
+@IVS_VotingAPI_HostAddress = http://localhost:5072
+
+GET {{IVS_VotingAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
