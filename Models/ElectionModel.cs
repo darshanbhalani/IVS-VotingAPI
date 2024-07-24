@@ -3,10 +3,9 @@
     public class ElectionModel
     {
         public long ElectionId { get; set; }
-        public int StateId { get; set; }
         public string StateName { get; set; }
-        public string EletctionType {  get; set; }
-        public int TotalAssemblies { get; set; }
-        public DateOnly Electiondate { get; set; }
+        public string StageName { get; set; }
+        public DateOnly ElectionDate { get; set; }
+        public string DB {  get; set; }
     }
 }

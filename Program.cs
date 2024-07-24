@@ -1,4 +1,5 @@
-
+using Npgsql;
+using IVS_API.Models;
 namespace IVS_VotingAPI
 {
     public class Program
@@ -7,21 +8,59 @@ namespace IVS_VotingAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddCors(
+option =>
+{
+option.AddPolicy(
+"AllowRequests", builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
+});
+            var configuration = builder.Configuration;
+            var dbConfiguration = configuration.GetSection("DBConfiguration").Get<DBConfiguration>();
+            var connectionString = $"Host={dbConfiguration!.Host};Port={dbConfiguration.Port};Username={dbConfiguration.Username};Password={dbConfiguration.Password};Database={dbConfiguration.Database}";
+
+            try
+            {
+                using (var tempConnection = new NpgsqlConnection(connectionString))
+                {
+                    tempConnection.Open();
+                    if (tempConnection.State == System.Data.ConnectionState.Open)
+                    {
+                        tempConnection.Close();
+                        Console.WriteLine("-------------------------------------------------------------------------");
+                        Console.WriteLine("Database connection successful!");
+                        Console.WriteLine("-------------------------------------------------------------------------");
+                        builder.Services.AddScoped<NpgsqlConnection>(_ => new NpgsqlConnection(connectionString));
+                    }
+                }
+            }
+            catch (NpgsqlException ex)
+            {
+                Console.WriteLine("-------------------------------------------------------------------------");
+                Console.WriteLine("Database connection error...");
+                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("-------------------------------------------------------------------------");
+
+            }
+            catch (Exception exx)
+            {
+                Console.WriteLine("-------------------------------------------------------------------------");
+                Console.WriteLine("Unkown error...");
+                Console.WriteLine("Error : " + exx.Message);
+                Console.WriteLine("-------------------------------------------------------------------------");
+
+            }
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseCors("AllowRequests");
 
             app.UseHttpsRedirection();
 
