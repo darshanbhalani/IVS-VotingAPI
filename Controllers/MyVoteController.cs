@@ -21,7 +21,7 @@ namespace IVS_VotingAPI.Controllers
             _connection = connection;
             _configuration = configuration;
         }
-        
+
 
         [HttpGet("GetAllElections")]
         public IActionResult GetAllElections()
@@ -43,7 +43,7 @@ namespace IVS_VotingAPI.Controllers
                                 StateName = reader.GetString(reader.GetOrdinal("statename")),
                                 StageName = reader.GetString(reader.GetOrdinal("electionstagesname")),
                                 ElectionDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("stateelectiondate"))),
-                                DB = reader.GetString(reader.GetOrdinal("db"))
+                                //DB = reader.GetString(reader.GetOrdinal("db"))
                             });
                         }
                     }
@@ -61,29 +61,33 @@ namespace IVS_VotingAPI.Controllers
         }
 
 
-        [HttpGet("ValidateVoter")]
-        public IActionResult CheckEligiblity(string voterId,long phoneNumber,string db) {
+        [HttpPost("ValidateVoter")]
+        public IActionResult CheckEligiblity(VotingModel data) {
             DateTime timeStamp = TimeZoneIST.now();
             try
             {
-                var connectionString = $"Host={_configuration["DBConfiguration:Host"]};Port={_configuration["DBConfiguration:Port"]};Username={_configuration["DBConfiguration:Username"]};Password={_configuration["DBConfiguration:Password"]};Database={db}";
+                var connectionString = $"Host={_configuration["DBConfiguration:Host"]};Port={_configuration["DBConfiguration:Port"]};Username={_configuration["DBConfiguration:Username"]};Password={_configuration["DBConfiguration:Password"]};Database=se_{data.ElectionId}";
                 using (var conn = new NpgsqlConnection(connectionString))
                 {
                     conn.Open();
                     using (var cmd = new NpgsqlCommand("SELECT * FROM IVS_DB_CHECKVOTER(@in_voterId,@in_phoneNumber)", conn))
                     {
-                        cmd.Parameters.AddWithValue("in_voterId", voterId);
-                        cmd.Parameters.AddWithValue("in_phoneNumber", phoneNumber);
+                        cmd.Parameters.AddWithValue("in_voterId", data.VoterId);
+                        cmd.Parameters.AddWithValue("in_phoneNumber", data.VoterPhoneNumber);
                         using (var reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
                             {
                                 if (reader.GetBoolean(reader.GetOrdinal("success")))
                                 {
-                                    return Ok(new { success = true, header = new { requestTime = timeStamp, responsTime = TimeZoneIST.now() }, body = new { message = "OTP successfully sended to your phone number." } });
+                                    return Ok(new { success = true, header = new { requestTime = timeStamp, responsTime = TimeZoneIST.now() }, body = new { message = reader.GetString(reader.GetOrdinal("message")) } });
+                                }
+                                else
+                                {
+                                    return Ok(new { success = true, header = new { requestTime = timeStamp, responsTime = TimeZoneIST.now() }, body = new { message = reader.GetString(reader.GetOrdinal("message")) } });
                                 }
                             }
-                            
+
                         }
                     }
                 }
@@ -100,21 +104,21 @@ namespace IVS_VotingAPI.Controllers
         }
 
 
-        [HttpGet("VerifyVoter")]
-        public IActionResult VerifyVoter(string voterId, long phoneNumber, string db,string otp)
+        [HttpPost("VerifyVoter")]
+        public IActionResult VerifyVoter(VotingModel data)
         {
             DateTime timeStamp = TimeZoneIST.now();
             try
             {
-                var connectionString = $"Host={_configuration["DBConfiguration:Host"]};Port={_configuration["DBConfiguration:Port"]};Username={_configuration["DBConfiguration:Username"]};Password={_configuration["DBConfiguration:Password"]};Database={db}";
+                var connectionString = $"Host={_configuration["DBConfiguration:Host"]};Port={_configuration["DBConfiguration:Port"]};Username={_configuration["DBConfiguration:Username"]};Password={_configuration["DBConfiguration:Password"]};Database=se_{data.ElectionId}";
                 using (var conn = new NpgsqlConnection(connectionString))
                 {
                     conn.Open();
                     using (var cmd = new NpgsqlCommand("SELECT * FROM IVS_DB_VERIFYVOTER(@in_voterId,@in_phoneNumber,@in_otp)", conn))
                     {
-                        cmd.Parameters.AddWithValue("in_voterId", voterId);
-                        cmd.Parameters.AddWithValue("in_phoneNumber", phoneNumber);
-                        cmd.Parameters.AddWithValue("in_otp", otp);
+                        cmd.Parameters.AddWithValue("in_voterId", data.VoterId);
+                        cmd.Parameters.AddWithValue("in_phoneNumber", data.VoterPhoneNumber);
+                        cmd.Parameters.AddWithValue("in_otp", data.Otp!);
                         using (var reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
@@ -173,23 +177,23 @@ namespace IVS_VotingAPI.Controllers
             }
         }
 
-        [HttpGet("Vote")]
-        public IActionResult Vote(VoteModel data)
+        [HttpPost("Vote")]
+        public IActionResult Vote([FromForm]  VotingModel data)
         {
             DateTime timeStamp = TimeZoneIST.now();
             try
             {
-                var connectionString = $"Host={_configuration["DBConfiguration:Host"]};Port={_configuration["DBConfiguration:Port"]};Username={_configuration["DBConfiguration:Username"]};Password={_configuration["DBConfiguration:Password"]};Database={data.DB}";
+                var connectionString = $"Host={_configuration["DBConfiguration:Host"]};Port={_configuration["DBConfiguration:Port"]};Username={_configuration["DBConfiguration:Username"]};Password={_configuration["DBConfiguration:Password"]};Database=se_{data.ElectionId}";
                 using (var conn = new NpgsqlConnection(connectionString))
                 {
                     conn.Open();
                     using (var cmd = new NpgsqlCommand("SELECT * FROM IVS_DB_RECORDVOTE(@in_voterId,@in_phoneNumber,@in_districtId,@in_token,@in_candidateId)", conn))
                     {
                         cmd.Parameters.AddWithValue("in_voterId", data.VoterId);
-                        cmd.Parameters.AddWithValue("in_phoneNumber", data.PhoneNumber);
-                        cmd.Parameters.AddWithValue("in_districtId", data.DistrictId);
-                        cmd.Parameters.AddWithValue("in_token", data.Token);
-                        cmd.Parameters.AddWithValue("in_candidateId", data.CandidateId);
+                        cmd.Parameters.AddWithValue("in_phoneNumber", data.VoterPhoneNumber);
+                        cmd.Parameters.AddWithValue("in_districtId", data.DistrictId!);
+                        cmd.Parameters.AddWithValue("in_token", data.Token!);
+                        cmd.Parameters.AddWithValue("in_candidateId", data.CandidateId!);
 
                         using (var reader = cmd.ExecuteReader())
                         {

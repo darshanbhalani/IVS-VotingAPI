@@ -7,6 +7,6 @@
         public int DistrictId { get; set; }
         public string Token { get; set; }
         public long CandidateId { get; set; }
-        public string DB { get; set;}
+        //public string DB { get; set;}
     }
 }
